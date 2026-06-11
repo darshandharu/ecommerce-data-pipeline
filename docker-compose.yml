@@ -25,6 +25,9 @@ x-airflow-common: &airflow-common
     SILVER_PATH: /opt/airflow/project/data/silver
     GOLD_PATH: /opt/airflow/project/data/gold
     SPARK_MASTER: local[*]
+    # 2g keeps Spark workers comfortable alongside webserver+scheduler+postgres
+    SPARK_DRIVER_MEMORY: 2g
+    SPARK_EXECUTOR_MEMORY: 2g
   volumes:
     - ./dags:/opt/airflow/dags
     - ./pyspark_jobs:/opt/airflow/project/pyspark_jobs

@@ -13,14 +13,31 @@ from pyspark_jobs.common.logger import get_logger
 log = get_logger(__name__)
 
 
+def _resolved(value, default):
+    """Fall back to ``default`` if ``value`` is empty or an unresolved ${VAR}.
+
+    Guards against an env var that was never set leaking a literal
+    ``${SPARK_DRIVER_MEMORY}`` into the JVM ``-Xmx`` flag.
+    """
+    if value is None:
+        return default
+    text = str(value).strip()
+    if not text or text.startswith("${"):
+        return default
+    return text
+
+
 def get_spark(config: dict) -> SparkSession:
     """Build (or fetch) a SparkSession from the ``spark`` block of config."""
     sconf = config.get("spark", {})
+    master = _resolved(sconf.get("master"), "local[*]")
+    driver_mem = _resolved(sconf.get("driver_memory"), "2g")
+    executor_mem = _resolved(sconf.get("executor_memory"), "2g")
     builder = (
         SparkSession.builder.appName(sconf.get("app_name", "ecommerce-pipeline"))
-        .master(sconf.get("master", "local[*]"))
-        .config("spark.driver.memory", sconf.get("driver_memory", "4g"))
-        .config("spark.executor.memory", sconf.get("executor_memory", "4g"))
+        .master(master)
+        .config("spark.driver.memory", driver_mem)
+        .config("spark.executor.memory", executor_mem)
         .config("spark.sql.shuffle.partitions", str(sconf.get("shuffle_partitions", 64)))
     )
 
