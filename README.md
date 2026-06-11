@@ -14,22 +14,60 @@ reporting datasets for **Power BI / Looker Studio / Tableau**.
 
 ## 📌 Table of Contents
 
-1. [Architecture](#-architecture)
-2. [Tech Stack](#-tech-stack)
-3. [Dataset](#-dataset)
-4. [Project Structure](#-project-structure)
-5. [Data Flow](#-data-flow)
-6. [Medallion Layers](#-medallion-layers)
-7. [Data Quality Framework](#-data-quality-framework)
-8. [CDC Simulation](#-cdc-change-data-capture-simulation)
-9. [Data Quality Dashboard](#-data-quality-dashboard)
-10. [Quick Start](#-quick-start)
-11. [Running the Pipeline](#-running-the-pipeline)
-12. [dbt Models & Business Metrics](#-dbt-models--business-metrics)
-13. [BigQuery Warehouse Design](#-bigquery-warehouse-design)
-14. [CI/CD](#-cicd)
-15. [Documentation](#-documentation)
-16. [Roadmap](#-roadmap)
+1. [Screenshots](#-screenshots)
+2. [Architecture](#-architecture)
+3. [Tech Stack](#-tech-stack)
+4. [Dataset](#-dataset)
+5. [Project Structure](#-project-structure)
+6. [Data Flow](#-data-flow)
+7. [Medallion Layers](#-medallion-layers)
+8. [Data Quality Framework](#-data-quality-framework)
+9. [CDC Simulation](#-cdc-change-data-capture-simulation)
+10. [Data Quality Dashboard](#-data-quality-dashboard)
+11. [Quick Start](#-quick-start)
+12. [Running the Pipeline](#-running-the-pipeline)
+13. [dbt Models & Business Metrics](#-dbt-models--business-metrics)
+14. [BigQuery Warehouse Design](#-bigquery-warehouse-design)
+15. [CI/CD](#-cicd)
+16. [Documentation](#-documentation)
+17. [Roadmap](#-roadmap)
+
+---
+
+## 📸 Screenshots
+
+> Live demo screenshots from running the full stack locally via Docker on the
+> real Olist dataset (~100k orders, 1.55M rows). Drop your captures into
+> [`docs/images/`](docs/images/) using the filenames below and they render here.
+
+### Data Quality Dashboard
+Streamlit dashboard reading the audit tables — records processed, failed records,
+duplicates, null violations, pipeline status and per-stage execution time.
+
+![Data Quality Dashboard](docs/images/dq_dashboard.png)
+
+### Airflow — End-to-End Pipeline DAG
+`ecommerce_end_to_end_pipeline` running green: Bronze → Silver → Data Quality
+gate → Gold (dbt tasks require a BigQuery target).
+
+![Airflow end-to-end DAG](docs/images/airflow_dag.png)
+
+### Airflow — CDC Daily DAG
+`ecommerce_cdc_daily` applying daily incremental (insert/update/delete) batches.
+
+![Airflow CDC DAG](docs/images/airflow_cdc_dag.png)
+
+<!-- Optional once BigQuery is wired up:
+### dbt lineage & tests
+![dbt lineage](docs/images/dbt_lineage.png)
+![dbt tests](docs/images/dbt_tests.png)
+### BigQuery Gold tables
+![BigQuery gold](docs/images/bigquery_gold.png)
+### BI dashboard (Looker Studio / Power BI)
+![BI dashboard](docs/images/bi_dashboard.png)
+-->
+
+See [`docs/screenshots.md`](docs/screenshots.md) for the full capture guide.
 
 ---
 

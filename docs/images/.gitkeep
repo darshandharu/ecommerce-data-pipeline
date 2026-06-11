@@ -1,0 +1,5 @@
+# Drop portfolio screenshots here. Referenced by README.md and docs/screenshots.md.
+# Suggested filenames:
+#   dq_dashboard.png      airflow_dag.png       airflow_grid.png
+#   airflow_cdc_dag.png   dbt_lineage.png       dbt_tests.png
+#   bigquery_gold.png     bi_dashboard.png
