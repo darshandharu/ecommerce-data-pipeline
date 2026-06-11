@@ -1,0 +1,82 @@
+# =====================================================================
+#  Master pipeline configuration
+#  Values referencing ${ENV_VAR} are resolved from environment at load
+#  time by pyspark_jobs/common/config_loader.py
+# =====================================================================
+project:
+  name: ecommerce-data-pipeline
+  owner: data-engineering
+  timezone: UTC
+
+paths:
+  raw:     ${RAW_PATH}
+  cdc:     ${CDC_PATH}
+  bronze:  ${BRONZE_PATH}
+  silver:  ${SILVER_PATH}
+  gold:    ${GOLD_PATH}
+
+bigquery:
+  project_id:      ${GCP_PROJECT_ID}
+  location:        ${GCP_REGION}
+  staging_bucket:  ${GCS_STAGING_BUCKET}
+  datasets:
+    bronze: ${BQ_BRONZE_DATASET}
+    silver: ${BQ_SILVER_DATASET}
+    gold:   ${BQ_GOLD_DATASET}
+    audit:  ${BQ_AUDIT_DATASET}
+  write_disposition: WRITE_TRUNCATE   # gold full-refresh; CDC uses MERGE
+
+spark:
+  master:          ${SPARK_MASTER}
+  app_name:        ecommerce-pipeline
+  driver_memory:   ${SPARK_DRIVER_MEMORY}
+  executor_memory: ${SPARK_EXECUTOR_MEMORY}
+  shuffle_partitions: 64
+  configs:
+    spark.sql.session.timeZone: UTC
+    spark.sql.adaptive.enabled: "true"
+    spark.sql.parquet.compression.codec: snappy
+
+# Source tables (Olist CSVs) -> see configs/tables_schema.yaml for schemas
+sources:
+  - name: orders
+    file: olist_orders_dataset.csv
+    primary_key: [order_id]
+    cdc_enabled: true
+  - name: order_items
+    file: olist_order_items_dataset.csv
+    primary_key: [order_id, order_item_id]
+    cdc_enabled: true
+  - name: order_payments
+    file: olist_order_payments_dataset.csv
+    primary_key: [order_id, payment_sequential]
+    cdc_enabled: false
+  - name: order_reviews
+    file: olist_order_reviews_dataset.csv
+    primary_key: [review_id]
+    cdc_enabled: false
+  - name: customers
+    file: olist_customers_dataset.csv
+    primary_key: [customer_id]
+    cdc_enabled: true
+  - name: sellers
+    file: olist_sellers_dataset.csv
+    primary_key: [seller_id]
+    cdc_enabled: false
+  - name: products
+    file: olist_products_dataset.csv
+    primary_key: [product_id]
+    cdc_enabled: false
+  - name: geolocation
+    file: olist_geolocation_dataset.csv
+    primary_key: []          # no natural PK; deduplicated on full row
+    cdc_enabled: false
+  - name: category_translation
+    file: product_category_name_translation.csv
+    primary_key: [product_category_name]
+    cdc_enabled: false
+
+logging:
+  level: INFO
+  format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+  run_log_table: pipeline_run_log

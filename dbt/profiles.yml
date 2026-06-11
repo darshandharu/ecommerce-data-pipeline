@@ -1,0 +1,35 @@
+# dbt connection profiles. In CI/prod, prefer keyfile via
+# GOOGLE_APPLICATION_CREDENTIALS + method: oauth/service-account.
+ecommerce_olist:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: ecom_gold
+      location: "{{ env_var('GCP_REGION', 'US') }}"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      threads: 4
+      timeout_seconds: 600
+      priority: interactive
+
+    prod:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: ecom_gold
+      location: "{{ env_var('GCP_REGION', 'US') }}"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      threads: 8
+      timeout_seconds: 1200
+      priority: batch
+
+    ci:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "ecom_ci_{{ env_var('GITHUB_RUN_ID', 'local') }}"
+      location: "{{ env_var('GCP_REGION', 'US') }}"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
+      threads: 4

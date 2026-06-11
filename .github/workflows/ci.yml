@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Set up Java (for PySpark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check pyspark_jobs dags scripts monitoring tests
+
+      - name: Format check (black)
+        run: black --check pyspark_jobs dags scripts monitoring tests
+
+      - name: Run unit tests
+        env:
+          RAW_PATH: ./data/raw
+          BRONZE_PATH: ./data/bronze
+          SILVER_PATH: ./data/silver
+          GOLD_PATH: ./data/gold
+        run: pytest -q --cov=pyspark_jobs --cov-report=xml tests/
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+
+  validate-dags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Airflow
+        run: pip install apache-airflow==2.9.3
+      - name: Import-check DAGs
+        env:
+          PYTHONPATH: ${{ github.workspace }}/dags
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, sys
+          failed = []
+          for f in pathlib.Path("dags").glob("*_dag.py"):
+              mod = f.stem
+              try:
+                  importlib.import_module(mod)
+                  print("OK  ", mod)
+              except Exception as e:
+                  print("FAIL", mod, e); failed.append(mod)
+          sys.exit(1 if failed else 0)
+          PY

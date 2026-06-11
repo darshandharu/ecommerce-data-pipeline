@@ -1,0 +1,132 @@
+# ============================================================
+#  Local stack: Airflow (webserver+scheduler) · PySpark · dbt · DQ dashboard
+#  Postgres backs the Airflow metadata DB.
+#  `docker-compose up -d` then open http://localhost:8080 (airflow/airflow)
+# ============================================================
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    PROJECT_DIR: /opt/airflow/project
+    PYTHONPATH: /opt/airflow/project
+    GCP_PROJECT_ID: ${GCP_PROJECT_ID:-my-gcp-project}
+    GCP_REGION: ${GCP_REGION:-US}
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/secrets/gcp-key.json
+    AIRFLOW_ALERT_EMAIL: ${AIRFLOW_ALERT_EMAIL:-data-alerts@example.com}
+    RAW_PATH: /opt/airflow/project/data/raw
+    CDC_PATH: /opt/airflow/project/data/cdc
+    BRONZE_PATH: /opt/airflow/project/data/bronze
+    SILVER_PATH: /opt/airflow/project/data/silver
+    GOLD_PATH: /opt/airflow/project/data/gold
+    SPARK_MASTER: local[*]
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./pyspark_jobs:/opt/airflow/project/pyspark_jobs
+    - ./monitoring:/opt/airflow/project/monitoring
+    - ./configs:/opt/airflow/project/configs
+    - ./dbt:/opt/airflow/project/dbt
+    - ./data:/opt/airflow/project/data
+    - ./logs:/opt/airflow/logs
+    - ./secrets:/opt/secrets:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+    restart: always
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username airflow --password airflow \
+          --firstname admin --lastname user --role Admin --email admin@example.com
+    restart: on-failure
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      retries: 5
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # On-demand PySpark runner (docker-compose run --rm spark <cmd>)
+  spark:
+    build:
+      context: .
+      dockerfile: docker/spark.Dockerfile
+    environment:
+      <<: *airflow-env
+    volumes:
+      - ./:/app
+    working_dir: /app
+    profiles: ["tools"]
+
+  # On-demand dbt runner (docker-compose run --rm dbt run)
+  dbt:
+    build:
+      context: .
+      dockerfile: docker/dbt.Dockerfile
+    environment:
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-my-gcp-project}
+      GCP_REGION: ${GCP_REGION:-US}
+      GOOGLE_APPLICATION_CREDENTIALS: /opt/secrets/gcp-key.json
+    volumes:
+      - ./dbt:/dbt
+      - ./secrets:/opt/secrets:ro
+    working_dir: /dbt
+    profiles: ["tools"]
+
+  # Data Quality dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/spark.Dockerfile
+    command: streamlit run monitoring/dashboard/dq_dashboard.py --server.port 8501 --server.address 0.0.0.0
+    environment:
+      AUDIT_PATH: /app/data/audit
+    volumes:
+      - ./:/app
+    working_dir: /app
+    ports:
+      - "8501:8501"
+    profiles: ["dashboard"]
+
+volumes:
+  pgdata:

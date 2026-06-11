@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: gold
+    description: "Conformed star schema produced by the PySpark Gold layer."
+    database: "{{ env_var('GCP_PROJECT_ID', 'my-gcp-project') }}"
+    schema: "{{ var('gold_dataset') }}"
+    tables:
+      - name: fct_orders
+        description: "One row per order with revenue, payment, review & delivery metrics."
+        loaded_at_field: order_purchase_timestamp
+        freshness:
+          warn_after: {count: 36, period: hour}
+          error_after: {count: 72, period: hour}
+        columns:
+          - name: order_id
+            tests: [not_null, unique]
+      - name: fct_order_items
+        description: "One row per item within an order."
+        columns:
+          - name: order_id
+            tests: [not_null]
+      - name: dim_customers
+        columns:
+          - name: customer_id
+            tests: [not_null, unique]
+      - name: dim_sellers
+        columns:
+          - name: seller_id
+            tests: [not_null, unique]
+      - name: dim_products
+        columns:
+          - name: product_id
+            tests: [not_null, unique]
+      - name: dim_date
+        columns:
+          - name: date_day
+            tests: [not_null, unique]

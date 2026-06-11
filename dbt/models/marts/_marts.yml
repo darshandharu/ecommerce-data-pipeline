@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: mart_revenue_monthly
+    description: "Monthly revenue, order count, customers and AOV (delivered orders)."
+    columns:
+      - name: order_month
+        description: "First day of the calendar month."
+        tests: [not_null, unique]
+      - name: revenue
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: mart_top_categories
+    description: "Categories ranked by delivered revenue with units and freight."
+    columns:
+      - name: category
+        tests: [not_null, unique]
+      - name: revenue_rank
+        tests: [not_null]
+
+  - name: mart_avg_order_value
+    description: "AOV and median order value by state and payment type."
+    columns:
+      - name: avg_order_value
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: mart_delivery_performance
+    description: "On-time %, average delivery/delay days by month and state."
+    columns:
+      - name: on_time_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+  - name: mart_seller_performance
+    description: "Seller revenue, review quality and late-delivery rate."
+    columns:
+      - name: seller_id
+        tests: [not_null, unique]
+      - name: late_delivery_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+  - name: mart_customer_retention
+    description: "Cohort retention by first-purchase month and month offset."
+    columns:
+      - name: cohort_month
+        tests: [not_null]
+      - name: active_customers
+        tests: [not_null]
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [cohort_month, month_offset]

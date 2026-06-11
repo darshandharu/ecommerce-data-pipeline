@@ -1,0 +1,115 @@
+# =====================================================================
+#  Declarative Data Quality rules consumed by the DQ framework
+#  (pyspark_jobs/data_quality/). Each table lists the checks to run.
+#
+#  check types:
+#    not_null            cols: [..]
+#    unique              cols: [..]            (composite -> PK uniqueness)
+#    duplicates          cols: [..]
+#    referential         column, ref_table, ref_column
+#    valid_timestamp     cols: [..]            (parseable + within bounds)
+#    timestamp_order     before, after         (before <= after)
+#    accepted_values     column, values: [..]
+#    non_negative        cols: [..]
+#
+#  severity: FAIL (breaks pipeline) | WARN (logged only)
+#  threshold: max fraction of failing rows tolerated (0 = strict)
+# =====================================================================
+orders:
+  - check: not_null
+    cols: [order_id, customer_id, order_status, order_purchase_timestamp]
+    severity: FAIL
+    threshold: 0.0
+  - check: unique
+    cols: [order_id]
+    severity: FAIL
+    threshold: 0.0
+  - check: accepted_values
+    column: order_status
+    values: [delivered, shipped, canceled, unavailable, invoiced, processing, created, approved]
+    severity: WARN
+    threshold: 0.0
+  - check: valid_timestamp
+    cols: [order_purchase_timestamp, order_approved_at, order_delivered_customer_date]
+    severity: WARN
+    threshold: 0.02
+  - check: timestamp_order
+    before: order_purchase_timestamp
+    after: order_delivered_customer_date
+    severity: WARN
+    threshold: 0.01
+
+order_items:
+  - check: not_null
+    cols: [order_id, order_item_id, product_id, seller_id]
+    severity: FAIL
+    threshold: 0.0
+  - check: unique
+    cols: [order_id, order_item_id]
+    severity: FAIL
+    threshold: 0.0
+  - check: referential
+    column: order_id
+    ref_table: orders
+    ref_column: order_id
+    severity: FAIL
+    threshold: 0.0
+  - check: non_negative
+    cols: [price, freight_value]
+    severity: FAIL
+    threshold: 0.0
+
+order_payments:
+  - check: not_null
+    cols: [order_id, payment_type, payment_value]
+    severity: FAIL
+    threshold: 0.0
+  - check: referential
+    column: order_id
+    ref_table: orders
+    ref_column: order_id
+    severity: WARN
+    threshold: 0.0
+  - check: non_negative
+    cols: [payment_value, payment_installments]
+    severity: FAIL
+    threshold: 0.0
+
+order_reviews:
+  - check: not_null
+    cols: [review_id, order_id, review_score]
+    severity: FAIL
+    threshold: 0.0
+  - check: accepted_values
+    column: review_score
+    values: ["1", "2", "3", "4", "5"]
+    severity: WARN
+    threshold: 0.0
+
+customers:
+  - check: not_null
+    cols: [customer_id, customer_unique_id, customer_state]
+    severity: FAIL
+    threshold: 0.0
+  - check: unique
+    cols: [customer_id]
+    severity: FAIL
+    threshold: 0.0
+
+products:
+  - check: unique
+    cols: [product_id]
+    severity: FAIL
+    threshold: 0.0
+  - check: referential
+    column: product_category_name
+    ref_table: category_translation
+    ref_column: product_category_name
+    severity: WARN
+    threshold: 0.05
+
+sellers:
+  - check: unique
+    cols: [seller_id]
+    severity: FAIL
+    threshold: 0.0

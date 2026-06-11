@@ -1,0 +1,47 @@
+name: dbt
+
+on:
+  pull_request:
+    paths:
+      - "dbt/**"
+      - ".github/workflows/dbt.yml"
+  workflow_dispatch:
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt
+        run: pip install dbt-core==1.8.3 dbt-bigquery==1.8.2
+
+      - name: Write service-account key
+        if: ${{ secrets.GCP_SA_KEY != '' }}
+        run: echo '${{ secrets.GCP_SA_KEY }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt compile (no warehouse needed)
+        run: dbt compile --target ci
+
+      - name: dbt build (run + test)
+        if: ${{ secrets.GCP_SA_KEY != '' }}
+        run: dbt build --target ci
+
+      - name: dbt source freshness
+        if: ${{ secrets.GCP_SA_KEY != '' }}
+        run: dbt source freshness --target ci || true
