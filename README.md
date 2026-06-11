@@ -36,28 +36,34 @@ reporting datasets for **Power BI / Looker Studio / Tableau**.
 
 ## 📸 Screenshots
 
-> Live demo screenshots from running the full stack locally via Docker on the
-> real Olist dataset (~100k orders, 1.55M rows). Drop your captures into
-> [`docs/images/`](docs/images/) using the filenames below and they render here.
+> Captured from running the full stack locally via Docker on the real Olist
+> dataset (~100k orders, **1.55M rows**, **35 data quality checks — all PASS**).
+> 🎥 [Watch the demo recording](docs/images/demo.mp4)
 
 ### Data Quality Dashboard
 Streamlit dashboard reading the audit tables — records processed, failed records,
-duplicates, null violations, pipeline status and per-stage execution time.
+duplicates, null violations, pipeline status and execution time, for a single
+unified pipeline run.
 
 ![Data Quality Dashboard](docs/images/dq_dashboard.png)
 
+### Pipeline Observability — execution time & row-count tracking
+Per-stage execution time and per-table row counts (`rows_in`/`rows_out`),
+sourced from the `pipeline_run_log` audit table.
+
+![Execution time per stage](docs/images/dashboard_execution.png)
+
+![Row-count tracking](docs/images/dashboard_rowcounts.png)
+
 ### Airflow — End-to-End Pipeline DAG
 `ecommerce_end_to_end_pipeline` running green: Bronze → Silver → Data Quality
-gate → Gold (dbt tasks require a BigQuery target).
+gate → Gold (the dbt tasks require a BigQuery target — expected red in local mode).
 
 ![Airflow end-to-end DAG](docs/images/airflow_dag.png)
 
+<!-- Add these once captured / once BigQuery is wired up:
 ### Airflow — CDC Daily DAG
-`ecommerce_cdc_daily` applying daily incremental (insert/update/delete) batches.
-
 ![Airflow CDC DAG](docs/images/airflow_cdc_dag.png)
-
-<!-- Optional once BigQuery is wired up:
 ### dbt lineage & tests
 ![dbt lineage](docs/images/dbt_lineage.png)
 ![dbt tests](docs/images/dbt_tests.png)
