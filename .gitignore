@@ -34,6 +34,7 @@ dbt/logs/
 
 # Airflow
 airflow/logs/
+logs/
 airflow.db
 airflow-webserver.pid
 standalone_admin_password.txt
