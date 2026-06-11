@@ -12,6 +12,7 @@ the dashboard works even without GCP credentials.
 """
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from contextlib import contextmanager
@@ -47,7 +48,15 @@ RUN_LOG_STRUCT = T.StructType([
 
 
 def new_run_id() -> str:
-    """Generate a sortable run id: <utc-timestamp>-<short-uuid>."""
+    """Generate a sortable run id: <utc-timestamp>-<short-uuid>.
+
+    Honors the ``PIPELINE_RUN_ID`` env var so a multi-stage run (bronze →
+    silver → dq → gold) can share one id, letting the dashboard correlate
+    DQ results, row counts and timings for a single pipeline execution.
+    """
+    env = os.getenv("PIPELINE_RUN_ID")
+    if env:
+        return env
     return f"{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:8]}"
 
 

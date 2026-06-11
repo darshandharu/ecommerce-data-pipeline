@@ -11,6 +11,11 @@ set -euo pipefail
 
 CONFIG="configs/pipeline_config.yaml"
 
+# One shared run id across all stages so the dashboard can correlate a single
+# pipeline execution (DQ results + row counts + timings).
+export PIPELINE_RUN_ID="local-$(date -u +%Y%m%dT%H%M%S)"
+echo "PIPELINE_RUN_ID=$PIPELINE_RUN_ID"
+
 echo "==================================================================="
 echo " 0/5  Generating simulated daily CDC files"
 echo "==================================================================="

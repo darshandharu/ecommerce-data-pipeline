@@ -70,10 +70,10 @@ def validate_monetary(df: DataFrame, columns: list[str]) -> DataFrame:
             )
             flags.append(flag)
     if flags:
-        out = out.withColumn(
-            "has_monetary_issue",
-            F.greatest(*[F.col(f).cast("int") for f in flags]) == 1,
-        ).drop(*flags)
+        flag_ints = [F.col(f).cast("int") for f in flags]
+        # F.greatest requires >= 2 columns; handle the single-column case.
+        combined = flag_ints[0] if len(flag_ints) == 1 else F.greatest(*flag_ints)
+        out = out.withColumn("has_monetary_issue", combined == 1).drop(*flags)
     return out
 
 
