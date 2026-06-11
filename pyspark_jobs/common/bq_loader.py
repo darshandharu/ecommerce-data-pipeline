@@ -37,7 +37,14 @@ def load_to_bigquery(
     project = bq.get("project_id")
     dataset = bq.get("datasets", {}).get(dataset_key)
 
-    if not project or project.startswith("${") or not dataset:
+    # Treat unset / unresolved / placeholder values as "not configured" so the
+    # rest of the pipeline runs end-to-end locally without GCP credentials.
+    placeholders = {"", "my-gcp-project", "your-gcp-project", None}
+    unconfigured = (
+        not project or project in placeholders or str(project).startswith("${")
+        or not dataset or str(dataset).startswith("${")
+    )
+    if unconfigured:
         log.warning("BigQuery not configured — skipping load of '%s' "
                     "(would target %s.%s)", table, dataset, table)
         return

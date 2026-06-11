@@ -86,13 +86,24 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  # On-demand PySpark runner (docker-compose run --rm spark <cmd>)
+  # On-demand PySpark runner (docker compose --profile tools run --rm spark <cmd>)
   spark:
     build:
       context: .
       dockerfile: docker/spark.Dockerfile
     environment:
-      <<: *airflow-env
+      PYTHONPATH: /app
+      SPARK_MASTER: local[*]
+      SPARK_DRIVER_MEMORY: 4g
+      SPARK_EXECUTOR_MEMORY: 4g
+      # local-only by default: leave GCP_PROJECT_ID empty so BigQuery is skipped
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
+      GCP_REGION: ${GCP_REGION:-US}
+      RAW_PATH: /app/data/raw
+      CDC_PATH: /app/data/cdc
+      BRONZE_PATH: /app/data/bronze
+      SILVER_PATH: /app/data/silver
+      GOLD_PATH: /app/data/gold
     volumes:
       - ./:/app
     working_dir: /app
