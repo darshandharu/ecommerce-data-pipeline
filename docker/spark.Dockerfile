@@ -10,7 +10,8 @@ ENV JAVA_HOME=/usr/lib/jvm/default-java \
     PYTHONPATH=/app
 
 WORKDIR /app
-COPY requirements.txt /app/requirements.txt
+# Lean runtime deps (pyspark + dashboard); Airflow/dbt live in their own images.
+COPY docker/runtime-requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY pyspark_jobs /app/pyspark_jobs

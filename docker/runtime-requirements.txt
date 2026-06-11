@@ -1,0 +1,15 @@
+# Lean deps for the PySpark job runner + Streamlit DQ dashboard container.
+# (Airflow and dbt are intentionally excluded — they run in their own images.)
+pyspark==3.5.1
+pandas==2.2.2
+pyarrow==16.1.0
+pyyaml==6.0.1
+python-dotenv==1.0.1
+
+# Dashboard
+streamlit==1.36.0
+plotly==5.22.0
+
+# Optional BigQuery load path (used only when GCP is configured)
+pandas-gbq==0.23.1
+google-cloud-bigquery==3.25.0
