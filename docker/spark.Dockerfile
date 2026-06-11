@@ -19,5 +19,12 @@ COPY monitoring  /app/monitoring
 COPY configs     /app/configs
 COPY scripts     /app/scripts
 
+# Create a user at UID 50000 (gid 0) matching the Airflow workers, so files
+# written by this container and Airflow are mutually overwritable AND Hadoop's
+# UnixPrincipal can resolve a username (avoids KerberosAuthException when the
+# container runs as a non-root UID). Placed last to keep the pip layer cached.
+RUN useradd --uid 50000 --gid 0 --create-home --home-dir /home/airflow \
+    --shell /bin/bash airflow
+
 # default: show the make help / job entrypoints
 CMD ["python", "-c", "import pyspark; print('PySpark', pyspark.__version__, 'ready')"]
