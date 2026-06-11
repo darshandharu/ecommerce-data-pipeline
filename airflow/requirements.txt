@@ -1,12 +1,11 @@
 # Extra libs layered on top of the apache/airflow base image.
-# Airflow core itself is pinned by the base image's constraints.
+#
+# Kept intentionally lean: the local DAGs run the PySpark jobs via BashOperator,
+# so the workers need PySpark + PyYAML (config loading) + pandas. dbt and the
+# cloud providers are NOT installed here to avoid pip dependency conflicts with
+# the Airflow base image; in production those run in their own images / Dataproc
+# (see docs/deployment.md). Locally, the dbt tasks are expected to fail without
+# a BigQuery target.
 pyspark==3.5.1
-apache-airflow-providers-google==10.20.0
-apache-airflow-providers-apache-spark==4.9.0
-dbt-core==1.8.3
-dbt-bigquery==1.8.2
-google-cloud-bigquery==3.25.0
-google-cloud-storage==2.17.0
-pandas==2.2.2
-pandas-gbq==0.23.1
 pyyaml==6.0.1
+pandas==2.2.2
