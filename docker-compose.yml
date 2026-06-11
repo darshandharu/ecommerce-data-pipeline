@@ -94,8 +94,12 @@ services:
     build:
       context: .
       dockerfile: docker/spark.Dockerfile
+    # Write data files as the same UID Airflow uses (50000) so output created
+    # by this container and by the Airflow workers stays mutually overwritable.
+    user: "50000:0"
     environment:
       PYTHONPATH: /app
+      HOME: /tmp
       SPARK_MASTER: local[*]
       SPARK_DRIVER_MEMORY: 4g
       SPARK_EXECUTOR_MEMORY: 4g
