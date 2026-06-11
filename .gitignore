@@ -8,15 +8,13 @@ venv/
 .coverage
 htmlcov/
 
-# Data (never commit raw/processed data)
-data/raw/*
-data/cdc/*
-data/bronze/*
-data/silver/*
-data/gold/*
+# Data (never commit raw/processed/audit data — keep only the dir skeleton)
+data/**
+!data/**/
 !data/**/.gitkeep
 *.csv
 *.parquet
+*.crc
 
 # Secrets / creds
 .env
@@ -50,5 +48,5 @@ derby.log
 .DS_Store
 Thumbs.db
 
-# Claude Code local settings
-.claude/settings.local.json
+# Claude Code local state (settings, scheduled-task locks, etc.)
+.claude/
